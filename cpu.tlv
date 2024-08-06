@@ -53,13 +53,37 @@
    `READONLY_MEM($pc, $$instr[31:0]);
    
    // instruction decoding
-   $is_u_instr = $instr[6:2] ==? 5'b0x101;
-   $is_s_instr = $instr[6:2] ==? 5'b0100x;
-   $is_j_instr = $instr[6:2] == 5'b11011;
-   $is_b_instr = $instr[6:2] == 5'b11000;
-   $is_i_instr = $instr[6:2] == 5'b00000 | $instr[6:2] == 5'b00001 | $instr[6:2] == 5'b00100 | $instr[6:2] == 5'b00110 | $instr[6:2] == 5'b11001;
-   $is_r_instr = $instr[6:2] == 5'b01011 | $instr[6:2] == 5'b01100 | $instr[6:2] == 5'b01110;
+   $opc[4:0] = $instr[6:2];
+   $is_u_instr = $opc ==? 5'b0x101;
+   $is_s_instr = $opc ==? 5'b0100x;
+   $is_j_instr = $opc == 5'b11011;
+   $is_b_instr = $opc == 5'b11000;
+   $is_i_instr = $opc == 5'b00000 | $opc == 5'b00001 | $opc == 5'b00100 | $opc == 5'b00110 | $opc == 5'b11001;
+   $is_r_instr = $opc == 5'b01011 | $opc == 5'b01100 | $opc == 5'b01110;
    
+   // further instruction decoding
+   $rs2[4:0] = $instr[24:20];
+   $rs1[4:0] = $instr[19:15];
+   $funct3[2:0] = $instr[14:12];
+   $rd[5:0] = $instr[11:6];
+   $imm[31:0] = $is_i_instr ? {  {21{$instr[31]}},  $instr[30:20]  } :
+      $is_s_instr ? { {21{$instr[31]}}, $instr[30:25], $instr[11:7] } :
+      $is_b_instr ? { {20{$instr[31]}}, $instr[31], $instr[7], $instr[30:25], $instr[11:8] } :
+      $is_u_instr ? { $instr[31:12], {12{$instr[11]}} } :
+      $is_j_instr ? { {12{$instr[31]}}, $instr[31], $instr[19:12], $instr[20], $instr[30:21] } : 32'b0;
+   
+   // checking validity depending on instruction type
+   $imm_valid = !$is_r_instr;
+   $funct3_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+   $rs1_valid = $is_r_instr || $is_i_instr || $is_s_instr || $is_b_instr;
+   $rs2_valid = $is_r_instr || $is_s_instr || $is_b_instr;
+   $rd_valid = $is_r_instr || $is_i_instr || $is_u_instr || $is_j_instr;
+   
+   // instruction decoding
+   
+   
+   // warning suppression
+   `BOGUS_USE($rd $rd_valid $rs1 $rs1_valid $rs2 $rs2_valid $funct3 $funct3_valid $imm $imm_valid);
    
    // Assert these to end simulation (before Makerchip cycle limit).
    *passed = 1'b0;
