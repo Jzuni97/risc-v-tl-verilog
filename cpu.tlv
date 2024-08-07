@@ -48,7 +48,7 @@
    
    $pc[31:0] = >>1$next_pc;
    $next_pc[31:0] = $reset ? 0 : 
-      $taken_br ? $br_tgt_pc : 
+      $taken_br ? $br_tgt_pc: 
       $pc + 4; // although the PC increment is depicted as "+1" (instruction), the actual increment must be by 4 (bytes)
    
    // instantiate IMEM
@@ -60,8 +60,8 @@
    $is_s_instr = $opc ==? 5'b0100x;
    $is_j_instr = $opc == 5'b11011;
    $is_b_instr = $opc == 5'b11000;
-   $is_i_instr = $opc == 5'b00000 | $opc == 5'b00001 | $opc == 5'b00100 | $opc == 5'b00110 | $opc == 5'b11001;
-   $is_r_instr = $opc == 5'b01011 | $opc == 5'b01100 | $opc == 5'b01110;
+   $is_i_instr = $opc == 5'b00000 || $opc == 5'b00001 || $opc == 5'b00100 || $opc == 5'b00110 || $opc == 5'b11001;
+   $is_r_instr = $opc == 5'b01011 || $opc == 5'b01100 || $opc == 5'b01110 || $opc == 5'b10100;
    
    // further instruction decoding
    $rs1[4:0] = $instr[19:15];
@@ -72,7 +72,7 @@
    $opcode[6:0] = $instr[6:0];
    $imm[31:0] = $is_i_instr ? {  {21{$instr[31]}},  $instr[30:20]  } :
       $is_s_instr ? { {21{$instr[31]}}, $instr[30:25], $instr[11:7] } :
-      $is_b_instr ? { {20{$instr[31]}}, $instr[31], $instr[7], $instr[30:25], $instr[11:8] } :
+      $is_b_instr ? { {19{$instr[31]}}, $instr[31], $instr[7], $instr[30:25], $instr[11:8], 1'b0 } :
       $is_u_instr ? { $instr[31:12], {12{$instr[11]}} } :
       $is_j_instr ? { {12{$instr[31]}}, $instr[31], $instr[19:12], $instr[20], $instr[30:21] } : 32'b0;
    
@@ -114,10 +114,10 @@
     $is_blt $is_bge $is_bltu $is_bgeu $is_addi $is_add);
    
    // Assert these to end simulation (before Makerchip cycle limit).
-   *passed = 1'b0;
+   m4+tb()
    *failed = *cyc_cnt > M4_MAX_CYC;
    
-   m4+rf(32, 32, $reset, $rd_valid, $rd[4:0], $result[31:0], $rs1_valid, $rs1[4:0], $src1_value, $rs2_valid, $rs2[4:0], $src2_value)
+   m4+rf(32, 32, $reset, $rd_valid, $rd[5:0], $result[31:0], $rs1_valid, $rs1[4:0], $src1_value, $rs2_valid, $rs2[4:0], $src2_value)
    //m4+dmem(32, 32, $reset, $addr[4:0], $wr_en, $wr_data[31:0], $rd_en, $rd_data)
    m4+cpu_viz()
 \SV
